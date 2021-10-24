@@ -1,37 +1,95 @@
 import json
 import requests
 import boto3
+from requests.models import Response
 
-CAR_TYPES = ["CAR", "TRUCK"]
+class CarDetection():
+    CAR_TYPES = ["CAR", "TRUCK"]
 
-keys = json.load(open("keys.json"))
+    def __init__(self, photo):
+        try:
+            self.photo = photo
+            self.car_count = 0
 
-key_id = keys["ID"]
-access_key = keys["KEY"]
-region = keys["REGION"]
+            self.url = f"http://localhost:3000/car-count"
+        except:
+            print("Init failed...")
 
-client = boto3.client('rekognition',
-                    aws_access_key_id = key_id,
-                    aws_secret_access_key = access_key,
-                    region_name = region)
 
-photo = "TestFiles/drive-thru-line.png"
+    def getCredentials(self):
+        try:
+            keys = json.load(open("keys.json"))
 
-with open(photo, 'rb') as source_image:
-    source_bytes = source_image.read()
+            self.key_id = keys["ID"]
+            self.access_key = keys["KEY"]
+            self.region = keys["REGION"]
+        except:
+            print("Failed to get credentials...")
 
-response = client.detect_labels(Image = { 'Bytes': source_bytes })
+    def getImageBytes(self):
+        try:
+            with open(self.photo, 'rb') as source_image:
+                self.source_bytes = source_image.read()
+        except:
+            print("Failed to get image bytes")
 
-response_labels = response["Labels"]
+    def initAmazonApi(self):
+        try:
+            self.amazon_client = boto3.client('rekognition',
+                        aws_access_key_id = self.key_id,
+                        aws_secret_access_key = self.access_key,
+                        region_name = self.region)
+        except:
+            print("Failed to initialize amazon client...")
 
-car_count = 0
+    def getAmazonApiCarCount(self):
+        try:
+            response = self.amazon_client.detect_labels(Image = { 'Bytes': self.source_bytes })
+            response_labels = response["Labels"]
 
-for rl in response_labels:
-    if(rl["Name"].upper() in CAR_TYPES):
-        car_count += len(rl["Instances"])
+            car_count = 0
 
-url = f"http://localhost:3000/car-count/{car_count}"
+            for rl in response_labels:
+                if(rl["Name"].upper() in self.CAR_TYPES):
+                    car_count += len(rl["Instances"])
+            
+            return car_count
+        except:
+            print("Failed to get car count from amazon api...")
 
-car_response = requests.post(url)
+    def getServerCarCount(self):
+        try:
+            self.response = requests.get(self.url)
+            self.displayResponse()
+        except:
+            print("Failed to get response from server")
 
-print(f'Response Status Code: {car_response.status_code}')
+    def postServerCarCount(self):
+        try:
+            car_count = self.getAmazonApiCarCount()
+            self.response = requests.post(f'{self.url}/{car_count}')
+            self.displayResponse()
+        except:
+            print("Failed to post to server")
+
+    def displayResponse(self):
+        try:
+            if (self.response.status_code == 200):
+                if(bool(self.response.content)):
+                    print(f'Current car count: {self.response.json()["CAR_COUNT"]}')
+        except:
+            print(f'Response Status Code: {self.response.status_code}')
+            print("Failed to get response status code")
+
+    def run(self):
+        self.getCredentials()
+        self.getImageBytes()
+        self.initAmazonApi()
+
+if __name__ == "__main__":
+    Car_Detection_Obj = CarDetection(f'TestFiles/drive-thru-line.png')
+    Car_Detection_Obj.run()
+
+    Car_Detection_Obj.getServerCarCount()
+    Car_Detection_Obj.postServerCarCount()
+    Car_Detection_Obj.getServerCarCount()

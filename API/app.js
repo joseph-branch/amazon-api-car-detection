@@ -11,7 +11,7 @@ app.get("/car-count", (req, res) => {
         return;
 
     console.log(car_count);
-    res.status(200).json({ "CART_COUNT" : car_count })
+    res.status(200).json({ "CAR_COUNT" : car_count })
 });
 
 app.post("/car-count/:cars", (req, res) => {
@@ -22,7 +22,7 @@ app.post("/car-count/:cars", (req, res) => {
 
     car_count = cars;
     
-    res.status(200).json("success")
+    res.status(200).send();
 });
 
 module.exports = app;
