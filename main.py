@@ -10,7 +10,7 @@ class CarDetection():
             self.photo = photo
             self.car_count = 0
 
-            self.url = f"http://localhost:3000/car-count"
+            self.url = f"http://localhost:8000/car-count"
         except:
             print("Init failed...")
 
@@ -74,8 +74,8 @@ class CarDetection():
     def displayResponse(self):
         try:
             if (self.response.status_code == 200):
-                if(bool(self.response.content)):
-                    print(f'Current car count: {self.response.json()["CAR_COUNT"]}')
+                if(self.response.json() != None):
+                    print(f'Current car count: {self.response.json()}')
         except:
             print(f'Response Status Code: {self.response.status_code}')
             print("Failed to get response status code")
