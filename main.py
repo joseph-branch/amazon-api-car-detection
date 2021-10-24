@@ -1,7 +1,6 @@
 import json
 import requests
 import boto3
-from requests.models import Response
 
 class CarDetection():
     CAR_TYPES = ["CAR", "TRUCK"]
